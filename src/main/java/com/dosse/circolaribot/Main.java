@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 Federico Dossena
+ * Copyright (C) 2021-2022 Federico Dossena
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import org.ini4j.Wini;
@@ -38,7 +39,7 @@ import org.jsoup.select.Elements;
  */
 public class Main {
 
-    private static final String URL = "https://www.galileicrema.edu.it/arc_circolari?items_per_page=All"; //URL da tenere controllato
+    private static final String URL = "https://www.galileicrema.edu.it/arc_circolari?items_per_page=All&field_anno_scolastico_value=$$$ANNO$$$"; //URL da tenere controllato ($$$ANNO$$$ viene sostituito dall'AS corrente, ad esempio 2022-2023)
     private static final String CONFIG_FILENAME = "config.ini"; //file da cui caricare la configurazione
     private static final String STATE_FILENAME = "state-v1.dat"; //file su cui salvare/caricare lo stato (per evitare di ripetere i post in caso di riavvio del bot)
 
@@ -51,7 +52,7 @@ public class Main {
     private static TelegramBot bot = null; //collegamento a telegram
 
     public static void main(String[] args) {
-        System.out.println("--- CircolariBot v1.0 ---");
+        System.out.println("--- CircolariBot v1.1 ---");
         loadConfig();
         loadState();
         for (;;) {
@@ -82,7 +83,14 @@ public class Main {
     private static void botLoop() {
         ArrayList<SendMessage> postsToSend = new ArrayList<>();
         try {
-            Document doc = Jsoup.connect(URL).get();
+            String annoScolasticoCorrente;
+            Calendar cal=Calendar.getInstance();
+            if(cal.get(Calendar.MONTH)>=Calendar.SEPTEMBER){
+                annoScolasticoCorrente=cal.get(Calendar.YEAR)+"-"+(cal.get(Calendar.YEAR)+1);
+            }else{
+                annoScolasticoCorrente=(cal.get(Calendar.YEAR)-1)+"-"+cal.get(Calendar.YEAR);
+            }
+            Document doc = Jsoup.connect(URL.replace("$$$ANNO$$$", annoScolasticoCorrente)).get();
             Elements circolari = doc.select("div.view-circolari-archivio-new div.view-content tr");
             if (circolari.isEmpty()) {
                 System.err.println("Nessuna circolare estratta, forse è cambiato qualcosa nel sito?");
