@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -52,6 +53,9 @@ public class Main {
     private static final long DELAY_BETWEEN_POSTS = 5000; //sleep di 5 secondi tra i post per evitare il rate limiting di telegram
     private static final long DELAY_BETWEEN_RECONNECTS = 60000; //se la connessione a telegram va giù, ritenta ogni 1 minuto
     private static final long DELAY_BETWEEN_PDFHASHES = 3000; //aspetta 3 secondi tra un download di un PDF e un altro
+    
+    private static final String APP_NAME="CircolariBot", APP_VERSION="1.2.1";
+    private static final String USER_AGENT=APP_NAME+"/"+APP_VERSION;
 
     private static String token = null; //ID del bot fornito da botfather
     private static String channel = null; //ID del canale su cui postare le notifiche (il bot deve essere admin)
@@ -60,7 +64,7 @@ public class Main {
     private static boolean testMode = false;
 
     public static void main(String[] args) {
-        System.out.println("--- CircolariBot v1.2 ---");
+        System.out.println("--- "+APP_NAME+" v"+APP_VERSION+" ---");
         if (args.length != 0 && args[0].equalsIgnoreCase("--test")) {
             testMode = true;
             System.out.println("Modalità test attiva, i messaggi verranno scritti sul terminale anzichè su telegram");
@@ -105,7 +109,7 @@ public class Main {
             } else {
                 annoScolasticoCorrente = (cal.get(Calendar.YEAR) - 1) + "-" + cal.get(Calendar.YEAR);
             }
-            Document doc = Jsoup.connect(URL.replace("$$$ANNO$$$", annoScolasticoCorrente)).get();
+            Document doc = Jsoup.connect(URL.replace("$$$ANNO$$$", annoScolasticoCorrente)).userAgent(USER_AGENT).get();
             Elements circolari = doc.select("div.view-circolari-archivio-new div.view-content tr");
             if (circolari.isEmpty()) {
                 System.err.println("Nessuna circolare estratta, forse è cambiato qualcosa nel sito?");
@@ -258,7 +262,11 @@ public class Main {
         byte[] data = null;
         InputStream in = null;
         try {
-            in = new URL(url).openStream();
+            URLConnection c=new URL(url).openConnection();
+            c.setDefaultUseCaches(false);
+            c.setRequestProperty("User-Agent", USER_AGENT);
+            c.connect();
+            in = c.getInputStream();
         } catch (Throwable ex) {
             try {
                 in.close();
