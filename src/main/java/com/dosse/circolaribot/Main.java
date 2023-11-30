@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2022 Federico Dossena
+ * Copyright (C) 2021-2023 Federico Dossena
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -53,18 +53,18 @@ public class Main {
     private static final long DELAY_BETWEEN_POSTS = 5000; //sleep di 5 secondi tra i post per evitare il rate limiting di telegram
     private static final long DELAY_BETWEEN_RECONNECTS = 60000; //se la connessione a telegram va giù, ritenta ogni 1 minuto
     private static final long DELAY_BETWEEN_PDFHASHES = 3000; //aspetta 3 secondi tra un download di un PDF e un altro
-    
-    private static final String APP_NAME="CircolariBot", APP_VERSION="1.2.1";
-    private static final String USER_AGENT=APP_NAME+"/"+APP_VERSION;
+
+    private static final String APP_NAME = "CircolariBot", APP_VERSION = "1.3";
+    private static final String USER_AGENT = APP_NAME + "/" + APP_VERSION;
 
     private static String token = null; //ID del bot fornito da botfather
     private static String channel = null; //ID del canale su cui postare le notifiche (il bot deve essere admin)
     private static TelegramBot bot = null; //collegamento a telegram
 
-    private static boolean testMode = false;
+    private static boolean testMode = false; //se attivata scrive sul terminale anzichè inviare sul canale
 
     public static void main(String[] args) {
-        System.out.println("--- "+APP_NAME+" v"+APP_VERSION+" ---");
+        System.out.println("--- " + APP_NAME + " v" + APP_VERSION + " ---");
         if (args.length != 0 && args[0].equalsIgnoreCase("--test")) {
             testMode = true;
             System.out.println("Modalità test attiva, i messaggi verranno scritti sul terminale anzichè su telegram");
@@ -94,8 +94,10 @@ public class Main {
         }
     }
 
+    //Se sei un mio studente, questo è il motivo per cui vi dico di fare l'analisi e sviluppare soluzioni flessibili! Inizialmente c'era solo uno di questi tre, per cui andava bene, adesso invece dovrebbe essere una classe, ma facendolo cambierei il formato di salvataggio del file state-v1.dat per cui sono costretto a farlo così
     private static HashMap<String, Long> alreadyPosted; //map url->timestamp dei post (per distinguere elementi nuovi da quelli vecchi)
     private static HashMap<String, byte[]> pdfHashes;  //map url->hash dei PDF delle circolari (per rilevare aggiornamenti di circolari già viste)
+    private static HashMap<String, Integer> numberOfUpdates; //map url->int del numero di volte che una circolare viene aggiornata
 
     private static int loopCounter = 0;
 
@@ -137,8 +139,10 @@ public class Main {
                                         }
                                     }
                                     if (updated) {
-                                        postsToSend.add(new SendMessage(channel, "Aggiornamento circolare " + numero + " del " + data + "\n" + titolo + "\n" + descrizione + "\n" + (link + "?ts=" + System.currentTimeMillis())));
+                                        int nUpdates = numberOfUpdates.getOrDefault(link, 0) + 1;
+                                        numberOfUpdates.put(link, nUpdates);
                                         pdfHashes.put(link, newHash);
+                                        postsToSend.add(new SendMessage(channel, "Aggiornamento circolare " + numero + " del " + data + " (agg." + nUpdates + ")" + "\n" + titolo + "\n" + descrizione + "\n" + (link + "?ts=" + System.currentTimeMillis())));
                                     }
                                 }
                             }
@@ -208,6 +212,7 @@ public class Main {
         ObjectInputStream ois = null;
         HashMap<String, Long> map;
         HashMap<String, byte[]> hashes;
+        HashMap<String, Integer> nUpdates;
         try {
             ois = new ObjectInputStream(new FileInputStream(STATE_FILENAME));
             map = (HashMap<String, Long>) ois.readObject();
@@ -217,19 +222,27 @@ public class Main {
                 hashes = new HashMap<String, byte[]>();
                 System.err.println("Caricato stato salvato da una versione precedente del bot");
             }
+            try {
+                nUpdates = (HashMap<String, Integer>) ois.readObject();
+            } catch (Throwable t) {
+                nUpdates = new HashMap<String, Integer>();
+                System.err.println("Caricato stato salvato da una versione precedente del bot");
+            }
         } catch (Throwable t) {
             System.err.println("Stato salvato mancante o corrotto, il bot riparte da zero");
             t.printStackTrace(System.err);
             map = new HashMap<String, Long>();
             hashes = new HashMap<String, byte[]>();
+            nUpdates = new HashMap<String, Integer>();
         }
         alreadyPosted = map;
         pdfHashes = hashes;
-        System.out.println("Caricati "+alreadyPosted.size()+" link e "+pdfHashes.size()+" hash");
+        numberOfUpdates = nUpdates;
         try {
             ois.close();
         } catch (Throwable ex) {
         }
+        System.out.println("Caricati " + alreadyPosted.size() + " link e " + pdfHashes.size() + " hash");
     }
 
     private static void saveState() {
@@ -238,6 +251,7 @@ public class Main {
             oos = new ObjectOutputStream(new FileOutputStream(STATE_FILENAME));
             oos.writeObject(alreadyPosted);
             oos.writeObject(pdfHashes);
+            oos.writeObject(numberOfUpdates);
             oos.flush();
         } catch (Throwable t) {
             System.err.println("Impossibile salvare lo stato");
@@ -262,7 +276,7 @@ public class Main {
         byte[] data = null;
         InputStream in = null;
         try {
-            URLConnection c=new URL(url).openConnection();
+            URLConnection c = new URL(url).openConnection();
             c.setDefaultUseCaches(false);
             c.setRequestProperty("User-Agent", USER_AGENT);
             c.connect();
