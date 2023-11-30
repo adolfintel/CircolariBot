@@ -1,6 +1,8 @@
 # CircolariBot
 Un semplice bot per Telegram che fa lo scraping delle circolari dell'IIS Galileo Galilei di Crema e le posta su un canale Telegram.
 
+[https://t.me/CircolariGalileiCrema](https://t.me/CircolariGalileiCrema)
+
 ## License
 Copyright (C) 2021-2023 Federico Dossena
 
