@@ -62,6 +62,14 @@ public class Main {
     private static TelegramBot bot = null; //collegamento a telegram
 
     private static boolean testMode = false; //se attivata scrive sul terminale anzichè inviare sul canale
+    
+    //HashMap con le info delle circolari che il bot ha visto nel corso della sua vita
+    //Se sei un mio studente, questo è il motivo per cui vi dico di fare l'analisi e sviluppare soluzioni flessibili! Inizialmente c'era solo uno di questi tre, per cui andava bene, adesso invece dovrebbe essere una classe, ma facendolo cambierei il formato di salvataggio del file state-v1.dat per cui sono costretto a farlo così
+    private static HashMap<String, Long> alreadyPosted; //map url->timestamp dei post (per distinguere elementi nuovi da quelli vecchi)
+    private static HashMap<String, byte[]> pdfHashes;  //map url->hash dei PDF delle circolari (per rilevare aggiornamenti di circolari già viste)
+    private static HashMap<String, Integer> numberOfUpdates; //map url->int del numero di volte che una circolare viene aggiornata
+
+    private static int loopCounter = 0;
 
     public static void main(String[] args) {
         System.out.println("--- " + APP_NAME + " v" + APP_VERSION + " ---");
@@ -74,6 +82,7 @@ public class Main {
         for (;;) {
             long ts = System.currentTimeMillis();
             botLoop();
+            System.gc();
             sleep(CHECK_NEW_INTERVAL - (System.currentTimeMillis() - ts));
         }
     }
@@ -93,13 +102,6 @@ public class Main {
             System.exit(1);
         }
     }
-
-    //Se sei un mio studente, questo è il motivo per cui vi dico di fare l'analisi e sviluppare soluzioni flessibili! Inizialmente c'era solo uno di questi tre, per cui andava bene, adesso invece dovrebbe essere una classe, ma facendolo cambierei il formato di salvataggio del file state-v1.dat per cui sono costretto a farlo così
-    private static HashMap<String, Long> alreadyPosted; //map url->timestamp dei post (per distinguere elementi nuovi da quelli vecchi)
-    private static HashMap<String, byte[]> pdfHashes;  //map url->hash dei PDF delle circolari (per rilevare aggiornamenti di circolari già viste)
-    private static HashMap<String, Integer> numberOfUpdates; //map url->int del numero di volte che una circolare viene aggiornata
-
-    private static int loopCounter = 0;
 
     private static void botLoop() {
         ArrayList<SendMessage> postsToSend = new ArrayList<>();
@@ -210,34 +212,34 @@ public class Main {
 
     private static void loadState() {
         ObjectInputStream ois = null;
-        HashMap<String, Long> map;
-        HashMap<String, byte[]> hashes;
-        HashMap<String, Integer> nUpdates;
+        HashMap<String, Long> alreadyPosted;
+        HashMap<String, byte[]> pdfHashes;
+        HashMap<String, Integer> numberOfUpdates;
         try {
             ois = new ObjectInputStream(new FileInputStream(STATE_FILENAME));
-            map = (HashMap<String, Long>) ois.readObject();
+            alreadyPosted = (HashMap<String, Long>) ois.readObject();
             try {
-                hashes = (HashMap<String, byte[]>) ois.readObject();
+                pdfHashes = (HashMap<String, byte[]>) ois.readObject();
             } catch (Throwable t) {
-                hashes = new HashMap<String, byte[]>();
+                pdfHashes = new HashMap<String, byte[]>();
                 System.err.println("Caricato stato salvato da una versione precedente del bot");
             }
             try {
-                nUpdates = (HashMap<String, Integer>) ois.readObject();
+                numberOfUpdates = (HashMap<String, Integer>) ois.readObject();
             } catch (Throwable t) {
-                nUpdates = new HashMap<String, Integer>();
+                numberOfUpdates = new HashMap<String, Integer>();
                 System.err.println("Caricato stato salvato da una versione precedente del bot");
             }
         } catch (Throwable t) {
             System.err.println("Stato salvato mancante o corrotto, il bot riparte da zero");
             t.printStackTrace(System.err);
-            map = new HashMap<String, Long>();
-            hashes = new HashMap<String, byte[]>();
-            nUpdates = new HashMap<String, Integer>();
+            alreadyPosted = new HashMap<String, Long>();
+            pdfHashes = new HashMap<String, byte[]>();
+            numberOfUpdates = new HashMap<String, Integer>();
         }
-        alreadyPosted = map;
-        pdfHashes = hashes;
-        numberOfUpdates = nUpdates;
+        Main.alreadyPosted = alreadyPosted;
+        Main.pdfHashes = pdfHashes;
+        Main.numberOfUpdates = numberOfUpdates;
         try {
             ois.close();
         } catch (Throwable ex) {

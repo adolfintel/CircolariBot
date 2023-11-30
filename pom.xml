@@ -36,7 +36,7 @@
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
-            <version>1.14.3</version>
+            <version>1.17.1</version>
         </dependency>
         <dependency>
             <groupId>org.ini4j</groupId>
@@ -46,7 +46,7 @@
         <dependency>
             <groupId>com.github.pengrad</groupId>
             <artifactId>java-telegram-bot-api</artifactId>
-            <version>5.3.0</version>
+            <version>6.9.1</version>
         </dependency>
     </dependencies>
     <properties>
