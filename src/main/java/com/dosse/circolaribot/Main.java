@@ -54,7 +54,7 @@ public class Main {
     private static final long DELAY_BETWEEN_RECONNECTS = 60000; //se la connessione a telegram va giù, ritenta ogni 1 minuto
     private static final long DELAY_BETWEEN_PDFHASHES = 3000; //aspetta 3 secondi tra un download di un PDF e un altro
 
-    private static final String APP_NAME = "CircolariBot", APP_VERSION = "1.3";
+    private static final String APP_NAME = "CircolariBot", APP_VERSION = "1.3.1";
     private static final String USER_AGENT = APP_NAME + "/" + APP_VERSION;
 
     private static String token = null; //ID del bot fornito da botfather
@@ -62,7 +62,7 @@ public class Main {
     private static TelegramBot bot = null; //collegamento a telegram
 
     private static boolean testMode = false; //se attivata scrive sul terminale anzichè inviare sul canale
-    
+
     //HashMap con le info delle circolari che il bot ha visto nel corso della sua vita
     //Se sei un mio studente, questo è il motivo per cui vi dico di fare l'analisi e sviluppare soluzioni flessibili! Inizialmente c'era solo uno di questi tre, per cui andava bene, adesso invece dovrebbe essere una classe, ma facendolo cambierei il formato di salvataggio del file state-v1.dat per cui sono costretto a farlo così
     private static HashMap<String, Long> alreadyPosted; //map url->timestamp dei post (per distinguere elementi nuovi da quelli vecchi)
@@ -124,7 +124,11 @@ public class Main {
                 try {
                     String numero = e.select("td.views-field-field-circolare-protocollo").first().text();
                     String titolo = e.select("td.views-field-title > a").first().text();
-                    String descrizione = e.select("td.views-field-title > p").first().text();
+                    String descrizione = "";
+                    try {
+                        descrizione = e.select("td.views-field-title > p").first().text();
+                    } catch (Throwable t) {
+                    }
                     String link = e.select("td.views-field-title > a").first().attributes().get("href");
                     String data = e.select("span.date-display-single").first().text();
                     if (checkForPdfUpdates) {
