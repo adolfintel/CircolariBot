@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Federico Dossena
+ * Copyright (C) 2021-2024 Federico Dossena
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,12 +54,13 @@ public class Main {
     private static final long DELAY_BETWEEN_RECONNECTS = 60000; //se la connessione a telegram va giù, ritenta ogni 1 minuto
     private static final long DELAY_BETWEEN_PDFHASHES = 3000; //aspetta 3 secondi tra un download di un PDF e un altro
 
-    private static final String APP_NAME = "CircolariBot", APP_VERSION = "1.3.1";
+    private static final String APP_NAME = "CircolariBot", APP_VERSION = "1.3.2";
     private static final String USER_AGENT = APP_NAME + "/" + APP_VERSION;
 
     private static String token = null; //ID del bot fornito da botfather
     private static String channel = null; //ID del canale su cui postare le notifiche (il bot deve essere admin)
     private static TelegramBot bot = null; //collegamento a telegram
+    private static long delayAtStart=0; //quanti ms aspettare all'avvio prima di connettersi a telegram (in caso sia avviato dal sistema prima di avere una connessione funzionante)
 
     private static boolean testMode = false; //se attivata scrive sul terminale anzichè inviare sul canale
 
@@ -79,6 +80,11 @@ public class Main {
         }
         loadConfig();
         loadState();
+        if(delayAtStart>0){
+            System.out.println("Aspetto "+delayAtStart+"ms prima di iniziare");
+            sleep(delayAtStart);
+            System.out.println("Pronto");
+        }
         for (;;) {
             long ts = System.currentTimeMillis();
             botLoop();
@@ -92,12 +98,14 @@ public class Main {
             Wini ini = new Wini(new File(CONFIG_FILENAME));
             token = ini.get("CircolariBot", "TOKEN");
             channel = ini.get("CircolariBot", "CHANNEL_ID");
+            delayAtStart = Long.parseLong(ini.get("CircolariBot", "DELAY_AT_START"));
         } catch (Throwable t) {
             System.err.println("Errore: impossibile caricare la configurazione\n\n"
                     + "Il file " + CONFIG_FILENAME + " deve avere la seguente sintassi:\n"
                     + "[CircolariBot]\n"
                     + "TOKEN=id fornito da botfather\n"
-                    + "CHANNEL_ID=id del canale di cui il bot è admin\n\n");
+                    + "CHANNEL_ID=id del canale di cui il bot è admin\n"
+                    + "DELAY_AT_START=ms da attendere all'avvio (opzionale)\n\n");
             t.printStackTrace(System.err);
             System.exit(1);
         }
