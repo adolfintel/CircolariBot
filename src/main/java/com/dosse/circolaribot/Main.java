@@ -101,7 +101,10 @@ public class Main {
             Wini ini = new Wini(new File(CONFIG_FILENAME));
             token = ini.get("CircolariBot", "TOKEN");
             channel = ini.get("CircolariBot", "CHANNEL_ID");
-            delayAtStart = Long.parseLong(ini.get("CircolariBot", "DELAY_AT_START"));
+            String s=ini.get("CircolariBot", "DELAY_AT_START");
+            if(s!=null){
+                delayAtStart = Long.parseLong(s);
+            }
         } catch (Throwable t) {
             System.err.println("Errore: impossibile caricare la configurazione\n\n"
                     + "Il file " + CONFIG_FILENAME + " deve avere la seguente sintassi:\n"
