@@ -121,7 +121,6 @@ public class Main {
         ArrayList<SendMessage> postsToSend = new ArrayList<>();
         try {
             for (int currentPage = 1; currentPage <= CHECK_PAGES; currentPage++) {
-                System.out.println(URL.replace("$$$PAGE$$$", "" + currentPage));
                 Document doc = Jsoup.connect(URL.replace("$$$PAGE$$$", "" + currentPage)).userAgent(USER_AGENT).get();
                 sleep(DELAY_BETWEEN_LISTS);
                 Elements circolari = doc.select("div.card-body");
