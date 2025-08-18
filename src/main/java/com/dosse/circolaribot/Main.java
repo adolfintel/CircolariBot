@@ -56,7 +56,7 @@ public class Main {
     private static final long DELAY_BETWEEN_LISTS = 3000; //aspetta 3 secondi tra una pagina e un'altra nell'elenco delle circolari
     private static final long DELAY_BETWEEN_LIST_AND_PAGE = 3000; //aspetta 3 secondi tra lo scaricamento dell'elenco e l'apertura di una circolare
 
-    private static final String APP_NAME = "CircolariBot", APP_VERSION = "1.4.0";
+    private static final String APP_NAME = "CircolariBot", APP_VERSION = "1.4.1";
     private static final String USER_AGENT = APP_NAME + "/" + APP_VERSION;
 
     private static String token = null; //ID del bot fornito da botfather
@@ -120,7 +120,7 @@ public class Main {
     private static void botLoop() {
         ArrayList<SendMessage> postsToSend = new ArrayList<>();
         try {
-            for (int currentPage = 1; currentPage <= CHECK_PAGES; currentPage++) {
+            for (int currentPage = 0; currentPage < CHECK_PAGES; currentPage++) {
                 Document doc = Jsoup.connect(URL.replace("$$$PAGE$$$", "" + currentPage)).userAgent(USER_AGENT).get();
                 sleep(DELAY_BETWEEN_LISTS);
                 Elements circolari = doc.select("div.card-body");
